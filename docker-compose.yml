@@ -1,0 +1,16 @@
+version: '3.8'
+services:
+  log-db:
+    image: postgres:16-alpine
+    container_name: log-db
+    environment:
+      POSTGRES_USER: loguser
+      POSTGRES_PASSWORD: logpassword
+      POSTGRES_DB: loganalyzerdb
+    ports:
+      - "5433:5432"
+    volumes:
+      - log_db_data:/var/lib/postgresql/data
+
+volumes:
+  log_db_data:

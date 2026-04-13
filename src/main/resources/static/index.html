@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Antigravity Log Analyzer</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; }
+
+        body {
+            background: #0a0a0f;
+            min-height: 100vh;
+        }
+
+        .bg-mesh {
+            position: fixed;
+            inset: 0;
+            z-index: 0;
+            background:
+                radial-gradient(ellipse 60% 50% at 10% 20%, rgba(88, 28, 135, 0.25), transparent),
+                radial-gradient(ellipse 50% 40% at 80% 10%, rgba(15, 23, 42, 0.6), transparent),
+                radial-gradient(ellipse 40% 50% at 70% 80%, rgba(30, 58, 138, 0.2), transparent),
+                radial-gradient(ellipse 30% 30% at 30% 70%, rgba(88, 28, 135, 0.15), transparent);
+        }
+
+        .glass {
+            background: rgba(255, 255, 255, 0.04);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+        }
+
+        .glass-card {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .glass-card:hover {
+            background: rgba(255, 255, 255, 0.06);
+            border-color: rgba(255, 255, 255, 0.1);
+            transform: translateY(-1px);
+        }
+
+        .log-row {
+            transition: all 0.2s ease;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+        }
+
+        .log-row:hover {
+            background: rgba(255, 255, 255, 0.03);
+        }
+
+        .badge {
+            font-size: 0.65rem;
+            font-weight: 600;
+            letter-spacing: 0.05em;
+            padding: 0.2rem 0.6rem;
+            border-radius: 6px;
+        }
+
+        .badge-error   { background: rgba(239, 68, 68, 0.15);  color: #fca5a5; border: 1px solid rgba(239, 68, 68, 0.2); }
+        .badge-warn    { background: rgba(245, 158, 11, 0.15); color: #fcd34d; border: 1px solid rgba(245, 158, 11, 0.2); }
+        .badge-info    { background: rgba(34, 197, 94, 0.15);  color: #86efac; border: 1px solid rgba(34, 197, 94, 0.2); }
+        .badge-debug   { background: rgba(96, 165, 250, 0.15); color: #93c5fd; border: 1px solid rgba(96, 165, 250, 0.2); }
+        .badge-unknown { background: rgba(148, 163, 184, 0.15);color: #cbd5e1; border: 1px solid rgba(148, 163, 184, 0.2); }
+
+        .stat-value {
+            background: linear-gradient(135deg, #e2e8f0, #ffffff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .input-glass {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            transition: all 0.2s ease;
+        }
+
+        .input-glass:focus {
+            background: rgba(255, 255, 255, 0.08);
+            border-color: rgba(139, 92, 246, 0.5);
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #7c3aed, #6d28d9);
+            transition: all 0.2s ease;
+        }
+
+        .btn-primary:hover {
+            background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 20px rgba(124, 58, 237, 0.3);
+        }
+
+        .btn-primary:active { transform: translateY(0); }
+
+        .fade-in {
+            animation: fadeIn 0.4s ease forwards;
+            opacity: 0;
+        }
+
+        @keyframes fadeIn {
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .fade-in { transform: translateY(8px); }
+
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
+    </style>
+</head>
+<body class="text-white antialiased">
+
+<div class="bg-mesh"></div>
+
+<div class="relative z-10 max-w-6xl mx-auto px-6 py-10">
+
+    <!-- Header -->
+    <header class="mb-10">
+        <div class="flex items-center gap-3 mb-1">
+            <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center">
+                <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                </svg>
+            </div>
+            <h1 class="text-2xl font-semibold tracking-tight">Antigravity Log Analyzer</h1>
+        </div>
+        <p class="text-sm text-slate-500 ml-11">Real-time log monitoring dashboard</p>
+    </header>
+
+    <!-- Stats -->
+    <div id="stats" class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+        <div class="glass-card rounded-2xl p-5">
+            <p class="text-xs text-slate-500 uppercase tracking-wider mb-1">Total</p>
+            <p id="stat-total" class="text-2xl font-semibold stat-value">0</p>
+        </div>
+        <div class="glass-card rounded-2xl p-5">
+            <p class="text-xs text-slate-500 uppercase tracking-wider mb-1">Error</p>
+            <p id="stat-error" class="text-2xl font-semibold text-red-400">0</p>
+        </div>
+        <div class="glass-card rounded-2xl p-5">
+            <p class="text-xs text-slate-500 uppercase tracking-wider mb-1">Warn</p>
+            <p id="stat-warn" class="text-2xl font-semibold text-amber-400">0</p>
+        </div>
+        <div class="glass-card rounded-2xl p-5">
+            <p class="text-xs text-slate-500 uppercase tracking-wider mb-1">Info</p>
+            <p id="stat-info" class="text-2xl font-semibold text-emerald-400">0</p>
+        </div>
+    </div>
+
+    <!-- Quick Parse -->
+    <div class="glass-card rounded-2xl p-6 mb-8">
+        <h2 class="text-sm font-medium text-slate-400 mb-4">Quick Parse</h2>
+        <div class="flex flex-col sm:flex-row gap-3">
+            <input id="rawInput" type="text" placeholder="[ERROR] Connection timeout on server-3"
+                   class="input-glass flex-1 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-600">
+            <button onclick="parseLog()" class="btn-primary rounded-xl px-6 py-3 text-sm font-medium text-white whitespace-nowrap">
+                Parse &amp; Save
+            </button>
+        </div>
+    </div>
+
+    <!-- Logs Table -->
+    <div class="glass rounded-2xl overflow-hidden">
+        <div class="flex items-center justify-between px-6 py-4 border-b border-white/5">
+            <h2 class="text-sm font-medium text-slate-400">Log Entries</h2>
+            <button onclick="fetchLogs()" class="text-xs text-violet-400 hover:text-violet-300 transition-colors flex items-center gap-1">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                </svg>
+                Refresh
+            </button>
+        </div>
+
+        <!-- Table Header -->
+        <div class="hidden sm:grid grid-cols-12 gap-4 px-6 py-3 text-xs text-slate-600 uppercase tracking-wider border-b border-white/5">
+            <div class="col-span-2">Timestamp</div>
+            <div class="col-span-1">Level</div>
+            <div class="col-span-5">Message</div>
+            <div class="col-span-2">System</div>
+            <div class="col-span-2">Error Code</div>
+        </div>
+
+        <div id="logList" class="max-h-[28rem] overflow-y-auto">
+            <div class="px-6 py-16 text-center text-sm text-slate-600">Loading...</div>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    async function fetchLogs() {
+        try {
+            const res = await fetch('/api/logs');
+            const logs = await res.json();
+
+            updateStats(logs);
+            renderLogs(logs);
+        } catch (e) {
+            document.getElementById('logList').innerHTML =
+                '<div class="px-6 py-16 text-center text-sm text-red-400/70">Failed to load logs</div>';
+        }
+    }
+
+    function updateStats(logs) {
+        document.getElementById('stat-total').textContent = logs.length;
+        document.getElementById('stat-error').textContent = logs.filter(l => l.level === 'ERROR').length;
+        document.getElementById('stat-warn').textContent  = logs.filter(l => l.level === 'WARN').length;
+        document.getElementById('stat-info').textContent  = logs.filter(l => l.level === 'INFO').length;
+    }
+
+    function badgeClass(level) {
+        switch (level) {
+            case 'ERROR': return 'badge-error';
+            case 'WARN':  return 'badge-warn';
+            case 'INFO':  return 'badge-info';
+            case 'DEBUG': return 'badge-debug';
+            default:      return 'badge-unknown';
+        }
+    }
+
+    function formatTime(ts) {
+        if (!ts) return '—';
+        const d = new Date(ts);
+        return d.toLocaleString('tr-TR', {
+            day: '2-digit', month: '2-digit', year: 'numeric',
+            hour: '2-digit', minute: '2-digit', second: '2-digit'
+        });
+    }
+
+    function renderLogs(logs) {
+        const container = document.getElementById('logList');
+
+        if (!logs.length) {
+            container.innerHTML = '<div class="px-6 py-16 text-center text-sm text-slate-600">No logs yet</div>';
+            return;
+        }
+
+        const sorted = [...logs].sort((a, b) => (b.id || 0) - (a.id || 0));
+
+        container.innerHTML = sorted.map((log, i) => `
+            <div class="log-row grid grid-cols-1 sm:grid-cols-12 gap-2 sm:gap-4 px-6 py-3.5 fade-in" style="animation-delay:${i * 30}ms">
+                <div class="sm:col-span-2 text-xs text-slate-500">${formatTime(log.timestamp)}</div>
+                <div class="sm:col-span-1">
+                    <span class="badge ${badgeClass(log.level)}">${log.level || '—'}</span>
+                </div>
+                <div class="sm:col-span-5 text-sm text-slate-300 truncate">${escapeHtml(log.message || '—')}</div>
+                <div class="sm:col-span-2 text-xs text-slate-500">${escapeHtml(log.systemName || '—')}</div>
+                <div class="sm:col-span-2 text-xs text-slate-600">${escapeHtml(log.errorCode || '—')}</div>
+            </div>
+        `).join('');
+    }
+
+    function escapeHtml(text) {
+        const d = document.createElement('div');
+        d.textContent = text;
+        return d.innerHTML;
+    }
+
+    async function parseLog() {
+        const input = document.getElementById('rawInput');
+        const raw = input.value.trim();
+        if (!raw) return;
+
+        try {
+            await fetch('/api/logs/parse', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ rawMessage: raw })
+            });
+            input.value = '';
+            fetchLogs();
+        } catch (e) {
+            console.error('Parse failed', e);
+        }
+    }
+
+    document.getElementById('rawInput').addEventListener('keydown', e => {
+        if (e.key === 'Enter') parseLog();
+    });
+
+    fetchLogs();
+</script>
+
+</body>
+</html>

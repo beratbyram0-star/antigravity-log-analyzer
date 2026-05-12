@@ -406,7 +406,7 @@ Tüm çalışma zamanı ayarları `src/main/resources/application.properties` do
 
 <br/>
 
-<p align="center">
-  <em>Handcrafted with passion in Giresun.</em><br/>
-  <sub>Giresun'da tutku ile el emeğiyle inşa edildi.</sub>
-</p>
+
+
+
+
